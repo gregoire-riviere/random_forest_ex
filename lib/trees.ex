@@ -8,6 +8,8 @@ end
 
 defmodule DecisionTree do
 
+  require Logger
+
   def generate_value_lists(list) do
     1..length(list) |> Enum.map(& Combination.combine(list, &1)) |> Enum.concat
   end
@@ -16,11 +18,11 @@ defmodule DecisionTree do
     cond do
       value                                     -> {:ok, value}
       is_nil(leaf1) and is_nil(leaf2)           -> {:error, "Node for criteria #{to_string criteria} is a dead end"}
-      is_nil(record[criteria])                  -> {:error, "Criteria #{to_string criteria} not found in record"}
+      is_nil(record[criteria.name])                  -> {:error, "Criteria #{to_string criteria} not found in record"}
       is_nil(split_value)                       -> {:error, "Split data for criteria #{to_string criteria} is incomplete"}
       true ->
         cond do
-          record.criteria in split_value -> find_value(leaf1, record)
+          record[criteria.name] in split_value -> find_value(leaf1, record)
           true -> find_value(leaf2, record)
         end
     end
@@ -36,7 +38,6 @@ defmodule DecisionTree do
         split_value: nil
       }
     else
-      # TODO: ajouter fin d'arbre ici
       current_gini = gini(dataset)
       {%{name: crit_name} = criteria, split_values, crit_gini} = choose_criteria(dataset, criteria_list)
       if current_gini > crit_gini do
@@ -65,7 +66,7 @@ defmodule DecisionTree do
 
   def gini(dataset, outcome_key \\ :outcome, outcome_values \\ [:yes, :no]) do
     ginis = Enum.map(outcome_values, fn v ->
-      -:math.pow((Enum.count(dataset, & &1[:outcome] == v) / length(dataset)), 2)
+      :math.pow((Enum.count(dataset, & &1[:outcome] == v) / length(dataset)), 2)
     end) |> Enum.sum
     ginis = 1 - ginis
   end
@@ -76,10 +77,10 @@ defmodule DecisionTree do
     dataset_no  = dataset |> Enum.filter(& not &1[crit_name] in considered_values)
 
     # gini of yes
-    gini_yes = gini(dataset_yes)#1 - :math.pow((Enum.count(dataset_yes, & &1[:outcome] == :yes) / length(dataset_yes)), 2) - :math.pow((Enum.count(dataset_yes, & &1[:outcome] == :no) / length(dataset_yes)), 2)
+    gini_yes = length(dataset_yes) > 0 && gini(dataset_yes) || 0
 
     # gini of no
-    gini_no = gini(dataset_no)#1 - :math.pow((Enum.count(dataset_no, & &1[:outcome] == :yes) / length(dataset_no)), 2) - :math.pow((Enum.count(dataset_no, & &1[:outcome] == :no) / length(dataset_no)), 2)
+    gini_no = length(dataset_no) > 0 && gini(dataset_no) || 0
 
     gini_yes * (length(dataset_yes)/length(dataset)) + gini_no * (length(dataset_no)/length(dataset))
 
@@ -89,11 +90,22 @@ defmodule DecisionTree do
     ginis = criteria_list |> Enum.map(fn c ->
       if c.type == :discrete do
         possible_values = generate_value_lists(c.possible_values)
-        |> Enum.map(fn p_v -> {c, p_v, gini_index_discrete(dataset, c, p_v)} end)
+        |> Enum.map(fn p_v ->
+          {c, p_v, gini_index_discrete(dataset, c, p_v)} end)
       else [] end
-    end)
+    end) |> List.flatten
     gini_min = Enum.map(ginis, fn {_,_,v} -> v end) |> Enum.min
     Enum.find(ginis, fn {_,_,v} -> v == gini_min end)
+  end
+
+  def explore_decision_tree(%TreeNode{leaf1: leaf1, leaf2: leaf2, value: value, criteria: criteria, split_value: split_value} = _tree, level \\ 0) do
+    if criteria != nil do
+      Logger.info("#{level} - Criteria #{to_string criteria.name}. Left values : #{inspect split_value}, rest to right")
+      explore_decision_tree(leaf1, level + 1)
+      explore_decision_tree(leaf2, level + 1)
+    else
+      Logger.info("#{level} - Final value : #{value}")
+    end
   end
 
 
