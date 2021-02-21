@@ -33,7 +33,7 @@ defmodule RandomForest do
       {:ok, r} = DecisionTree.find_value(tree, record)
       r
     end)
-    Logger.debug("#{inspect vote}")
+    # Logger.debug("#{inspect vote}")
     if Enum.count(vote, & &1 == :yes) > Enum.count(vote, & &1 == :no), do: :yes, else: :no
   end
 
