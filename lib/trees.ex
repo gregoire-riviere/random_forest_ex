@@ -17,9 +17,9 @@ defmodule DecisionTree do
   def find_value(%TreeNode{leaf1: leaf1, leaf2: leaf2, value: value, criteria: criteria, split_value: split_value} = _tree, record) do
     cond do
       value                                     -> {:ok, value}
-      is_nil(leaf1) and is_nil(leaf2)           -> {:error, "Node for criteria #{to_string criteria} is a dead end"}
-      is_nil(record[criteria.name])                  -> {:error, "Criteria #{to_string criteria} not found in record"}
-      is_nil(split_value)                       -> {:error, "Split data for criteria #{to_string criteria} is incomplete"}
+      is_nil(leaf1) and is_nil(leaf2)           -> {:error, "Node for criteria #{to_string criteria.name} is a dead end"}
+      is_nil(record[criteria.name])                  -> {:error, "Criteria #{to_string criteria.name} not found in record"}
+      is_nil(split_value)                       -> {:error, "Split data for criteria #{to_string criteria.name} is incomplete"}
       criteria.type == :discrete ->
         cond do
           record[criteria.name] in split_value -> find_value(leaf1, record)
@@ -68,6 +68,41 @@ defmodule DecisionTree do
     end
 
   end
+
+  # def build_decision_tree(dataset, criteria_list) do
+  #   final_leaf = %TreeNode{
+  #     value: (if Enum.count(dataset, & &1[:outcome] == :yes) > Enum.count(dataset, & &1[:outcome] == :no), do: :yes, else: :no)
+  #   }
+  #   if criteria_list == [] do
+  #     final_leaf
+  #   else
+  #     current_gini = gini(dataset)
+  #     chosen_criteria = choose_criteria(dataset, criteria_list)
+  #     if chosen_criteria != nil do
+  #       {%{name: crit_name, type: crit_type} = criteria, split_values, crit_gini} = chosen_criteria
+  #       if current_gini > crit_gini do
+  #         {dataset_yes, dataset_no} =
+  #           if crit_type == :discrete do
+  #             {dataset |> Enum.filter(& &1[crit_name] in split_values), dataset |> Enum.filter(& not &1[crit_name] in split_values)}
+  #           else
+  #             {dataset |> Enum.filter(& &1[crit_name] <= split_values), dataset |> Enum.filter(& not (&1[crit_name] > split_values))}
+  #           end
+  #         dataset_yes_outcome =  (if Enum.count(dataset_yes, & &1[:outcome] == :yes) > Enum.count(dataset_yes, & &1[:outcome] == :no), do: :yes, else: :no)
+  #         dataset_no_outcome =  (if Enum.count(dataset_no, & &1[:outcome] == :yes) > Enum.count(dataset_no, & &1[:outcome] == :no), do: :yes, else: :no)
+  #         if dataset_yes_outcome != dataset_no_outcome do
+  #           criteria_left = criteria_list -- [criteria]
+  #           %TreeNode{
+  #             leaf1: build_decision_tree(dataset_yes, criteria_left),
+  #             leaf2: build_decision_tree(dataset_no, criteria_left),
+  #             split_value: split_values,
+  #             criteria: criteria
+  #           }
+  #         else %TreeNode{value: dataset_yes_outcome} end
+  #       else final_leaf end
+  #     else final_leaf end
+  #   end
+
+  # end
 
   def gini(dataset, outcome_key \\ :outcome, outcome_values \\ [:yes, :no]) do
     ginis = Enum.map(outcome_values, fn v ->
