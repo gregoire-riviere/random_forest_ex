@@ -1,4 +1,4 @@
-#code from https://github.com/seantanly/elixir-combination/blob/master/lib/combination.ex
+# Code from https://github.com/seantanly/elixir-combination/blob/master/lib/combination.ex
 
 defmodule Combination do
   @moduledoc """
